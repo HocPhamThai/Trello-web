@@ -1,28 +1,50 @@
-import express from "express";
-import { mapOrder } from "~/utils/sorts.js";
+import express from 'express'
 
-const app = express();
+import { CONNECT_DB, GET_DB, ClOSE_DB } from '~/config/mongodb'
+import existHook from 'async-exit-hook'
 
-const hostname = "localhost";
-const port = 8017;
+const START_SERVER = () => {
+  const app = express()
 
-app.get("/", (req, res) => {
-  console.log(
-    mapOrder(
-      [
-        { id: "id-1", name: "One" },
-        { id: "id-2", name: "Two" },
-        { id: "id-3", name: "Three" },
-        { id: "id-4", name: "Four" },
-        { id: "id-5", name: "Five" },
-      ],
-      ["id-5", "id-4", "id-2", "id-3", "id-1"],
-      "id"
-    )
-  );
-  res.end("<h1>Hello World!</h1><hr>");
-});
+  const hostname = 'localhost'
+  const port = 8017
 
-app.listen(port, hostname, () => {
-  console.log(`Hello World, I am running at http://${hostname}:${port}/`);
-});
+  app.get('/', async (req, res) => {
+    console.log(await GET_DB().listCollections().toArray())
+    res.end('<h1>Hello World!</h1><hr>')
+  })
+
+  app.listen(port, hostname, () => {
+    console.log(`3. Hello World, I am running at http://${hostname}:${port}/`)
+  })
+
+  existHook(async () => {
+    console.log('4. Closing connection to MongoDb Atlas...')
+    await ClOSE_DB()
+    console.log('5. Close connection to MongoDb Atlas Succeed!')
+  })
+}
+
+//chỉ khi connect thành công thì mới start server
+// Immediately-Invoked Function Expression (IIFE)
+;(async () => {
+  try {
+    console.log('1. Connecting to MongoDb Atlas...')
+    await CONNECT_DB()
+    console.log('2. Connect to MongoDb Atlas Succeed!')
+    START_SERVER()
+  } catch (err) {
+    console.error(err)
+    process.exit(0)
+  }
+})()
+
+// //chỉ khi connect thành công thì mới start server
+// console.log('1. Connecting to MongoDb Atlas...')
+// CONNECT_DB()
+//   .then(() => console.log('2. Connect to MongoDb Atlas Succeed!'))
+//   .then(() => START_SERVER())
+//   .catch((err) => {
+//     console.error(err)
+//     process.exit(0)
+//   })
